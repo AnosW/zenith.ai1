@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zenith AI — Yapay Zekâ Platformu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        zenith: {
+                            black: '#090A0F',
+                            dark: '#12141C',
+                            card: '#1A1D28',
+                            border: '#2A2E3D',
+                            green: '#00FF66',
+                            greenHover: '#00D654',
+                            greenMuted: 'rgba(0, 255, 102, 0.15)',
+                            textSecondary: '#8E95A5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #090A0F; color: #FFFFFF; -webkit-tap-highlight-color: transparent; }
+        .glow-green { box-shadow: 0 0 20px rgba(0, 255, 102, 0.25); }
+        .glow-green-sm { box-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #090A0F; }
+        ::-webkit-scrollbar-thumb { background: #2A2E3D; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00FF66; }
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #00FF66; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body code:not(pre code) { background: #12141C; color: #00FF66; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.875em; border: 1px solid #2A2E3D; }
+        .markdown-body pre { background: #12141C; padding: 1rem; border-radius: 8px; border: 1px solid #2A2E3D; overflow-x: auto; margin-bottom: 1rem; }
+        .markdown-body blockquote { border-left: 3px solid #00FF66; padding-left: 0.75rem; color: #8E95A5; font-style: italic; margin-bottom: 0.75rem; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        .markdown-body th, .markdown-body td { border: 1px solid #2A2E3D; padding: 0.5rem; text-align: left; }
+        .markdown-body th { background: #1A1D28; color: #00FF66; }
+    </style>
+</head>
+<body class="bg-zenith-black min-h-screen text-slate-100 flex flex-col h-screen overflow-hidden antialiased selection:bg-zenith-green selection:text-black">
+
+    <div id="app-wrapper" class="flex h-full w-full overflow-hidden">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-zenith-dark border-r border-zenith-border flex flex-col transition-transform duration-300 transform -translate-x-full md:relative md:translate-x-0">
+            <div class="p-4 border-b border-zenith-border flex items-center justify-between">
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="app.startNewChat()">
+                    <div class="w-8 h-8 rounded-lg bg-zenith-green/10 border border-zenith-green flex items-center justify-center glow-green-sm">
+                        <i class="fa-solid fa-bolt text-zenith-green text-base"></i>
+                    </div>
+                    <span class="font-extrabold text-xl tracking-wider text-white">ZENITH<span class="text-zenith-green font-light text-xs ml-1 bg-zenith-green/10 px-1.5 py-0.5 rounded border border-zenith-green/30">AI</span></span>
+                </div>
+                <button onclick="app.toggleSidebar()" class="md:hidden text-zenith-textSecondary hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-3">
+                <button onclick="app.startNewChat()" class="w-full bg-zenith-green/10 hover:bg-zenith-green/20 border border-zenith-green/40 text-zenith-green font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center space-x-2 glow-green-sm">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                    <span data-i18n="new_chat">Yeni Sohbet</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-1" id="chat-history-container">
+                <div class="text-xs text-zenith-textSecondary px-2 py-1 font-semibold uppercase tracking-wider" data-i18n="recent_chats">Geçmiş Sohbetler</div>
+            </div>
+
+            <div class="p-3 border-t border-zenith-border bg-zenith-black/40">
+                <div class="bg-zenith-card border border-zenith-border rounded-xl p-3 space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-zenith-textSecondary" data-i18n="plan_status">Plan:</span>
+                        <span id="sidebar-plan-badge" class="font-bold text-zenith-green bg-zenith-green/10 px-2 py-0.5 rounded text-[10px] border border-zenith-green/30">ÜCRETSİZ</span>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+                            <span data-i18n="msg_quota">Günlük Limit</span>
+                            <span id="sidebar-msg-count">0 / 15</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-zenith-dark rounded-full overflow-hidden">
+                            <div id="sidebar-msg-bar" class="h-full bg-zenith-green rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button onclick="app.openUpgradeModal()" class="w-full bg-zenith-green text-black font-extrabold text-xs py-2 rounded-lg hover:bg-zenith-greenHover transition glow-green-sm mt-1" data-i18n="upgrade_btn">
+                        <i class="fa-solid fa-crown mr-1"></i> Plan Detayları
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-3 border-t border-zenith-border flex items-center justify-between">
+                <div class="flex items-center space-x-2 overflow-hidden cursor-pointer" onclick="app.openAuthModal()">
+                    <div class="w-8 h-8 rounded-full bg-zenith-border flex items-center justify-center text-zenith-green font-bold text-xs" id="user-avatar-initials">
+                        M
+                    </div>
+                    <div class="truncate">
+                        <p id="user-display-name" class="text-xs font-bold text-white truncate">Misafir Kullanıcı</p>
+                        <p id="user-display-email" class="text-[10px] text-zenith-textSecondary truncate">Oturum Açılmadı</p>
+                    </div>
+                </div>
+                <button onclick="app.openSettingsModal()" class="text-zenith-textSecondary hover:text-white p-1.5 rounded-lg hover:bg-zenith-card transition" title="Ayarlar">
+                    <i class="fa-solid fa-gear text-sm"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <main class="flex-1 flex flex-col h-full bg-zenith-black relative min-w-0">
+            <header class="h-14 border-b border-zenith-border px-4 flex items-center justify-between bg-zenith-dark/60 backdrop-blur-md z-10">
+                <div class="flex items-center space-x-3">
+                    <button onclick="app.toggleSidebar()" class="md:hidden text-zenith-textSecondary hover:text-white p-2">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-robot text-zenith-green text-sm"></i>
+                        <span id="active-chat-title" class="font-bold text-sm text-white truncate max-w-[130px] sm:max-w-xs">Yeni Sohbet</span>
+                        <select id="model-selector" onchange="app.changeModel(this.value)" class="bg-zenith-card border border-zenith-border text-xs text-zenith-green rounded-lg px-2 py-1 focus:outline-none focus:border-zenith-green">
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="btn-toggle-search" onclick="app.toggleWebSearch()" class="flex items-center space-x-1.5 text-xs bg-zenith-card border border-zenith-border px-3 py-1.5 rounded-full hover:border-zenith-green transition">
+                        <i class="fa-solid fa-globe text-zenith-textSecondary" id="search-icon"></i>
+                        <span class="text-slate-300 font-medium hidden sm:inline" data-i18n="web_search">Web Araması</span>
+                        <span id="search-status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    </button>
+
+                    <button onclick="app.toggleLanguage()" class="text-xs bg-zenith-card border border-zenith-border px-2.5 py-1.5 rounded-full hover:border-zenith-green transition font-bold text-zenith-green">
+                        <span id="lang-code-indicator">TR</span>
+                    </button>
+
+                    <button id="auth-header-btn" onclick="app.openAuthModal()" class="text-xs font-bold px-3 py-1.5 rounded-full bg-zenith-green text-black hover:bg-zenith-greenHover transition">
+                        Giriş Yap
+                    </button>
+                </div>
+            </header>
+
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                <div id="empty-state" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                    <div class="w-16 h-16 rounded-2xl bg-zenith-green/10 border border-zenith-green flex items-center justify-center glow-green">
+                        <i class="fa-solid fa-bolt text-zenith-green text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-white">Zenith AI Platformuna Hoş Geldiniz</h2>
+                    <p class="text-xs sm:text-sm text-zenith-textSecondary max-w-md" data-i18n="empty_subtitle">
+                        Sorular sorun, kod yazdırın, görselleri ve PDF dosyalarını analiz edin ya da canlı web araştırması yapın.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl w-full pt-4">
+                        <button onclick="app.usePrompt('Yapay zeka alanındaki son teknolojik gelişmeleri özetle.')" class="bg-zenith-card hover:bg-zenith-border border border-zenith-border p-3 rounded-xl text-left transition group">
+                            <div class="text-xs font-bold text-white group-hover:text-zenith-green flex items-center space-x-2">
+                                <i class="fa-solid fa-newspaper"></i>
+                                <span>Güncel AI Gelişmeleri</span>
+                            </div>
+                            <p class="text-[11px] text-zenith-textSecondary mt-1">Gündemdeki yapay zeka haberlerini keşfet.</p>
+                        </button>
+
+                        <button onclick="app.usePrompt('Node.js ve Express.js ile güvenli bir REST API örneği yaz.')" class="bg-zenith-card hover:bg-zenith-border border border-zenith-border p-3 rounded-xl text-left transition group">
+                            <div class="text-xs font-bold text-white group-hover:text-zenith-green flex items-center space-x-2">
+                                <i class="fa-solid fa-code"></i>
+                                <span>REST API Mimarisi</span>
+                            </div>
+                            <p class="text-[11px] text-zenith-textSecondary mt-1">Örnek backend kodu ve anlatımı al.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="messages-list" class="space-y-6 max-w-3xl mx-auto w-full"></div>
+            </div>
+
+            <div class="p-3 sm:p-4 border-t border-zenith-border bg-zenith-dark/80 backdrop-blur-md">
+                <div class="max-w-3xl mx-auto w-full">
+                    <div id="file-preview-pill" class="hidden mb-2 inline-flex items-center space-x-2 bg-zenith-card border border-zenith-green/50 text-white text-xs px-3 py-1.5 rounded-lg">
+                        <i class="fa-solid fa-paperclip text-zenith-green"></i>
+                        <span id="file-preview-name" class="truncate max-w-[200px]">dosya.pdf</span>
+                        <button onclick="app.removeAttachment()" class="text-zenith-textSecondary hover:text-red-400 ml-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="relative bg-zenith-card border border-zenith-border rounded-2xl focus-within:border-zenith-green transition shadow-lg">
+                        <textarea id="chat-input" rows="1" placeholder="Zenith AI'ya bir mesaj yazın..." onkeydown="app.handleKeyDown(event)" class="w-full bg-transparent text-slate-100 text-sm p-3.5 pr-24 focus:outline-none resize-none max-h-32 min-h-[52px]"></textarea>
+                        
+                        <div class="absolute right-2 bottom-2 flex items-center space-x-1.5">
+                            <input type="file" id="file-input" class="hidden" onchange="app.handleFileUpload(event)" accept=".pdf,image/png,image/jpeg,image/webp">
+                            <button onclick="document.getElementById('file-input').click()" class="p-2 text-zenith-textSecondary hover:text-zenith-green transition rounded-lg hover:bg-zenith-dark" title="Görsel veya PDF Ekleyin">
+                                <i class="fa-solid fa-paperclip text-base"></i>
+                            </button>
+
+                            <button id="send-btn" onclick="app.sendMessage()" class="w-9 h-9 bg-zenith-green text-black rounded-xl flex items-center justify-center hover:bg-zenith-greenHover transition glow-green-sm font-bold">
+                                <i class="fa-solid fa-arrow-up text-base"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-zenith-textSecondary">
+                        <span>Zenith AI Serverless Endpoint Altyapısı</span>
+                        <span id="current-quota-status-text">Kalan mesaj: 15/15</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-auth" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zenith-dark border border-zenith-border rounded-2xl max-w-md w-full p-6 space-y-4 relative">
+            <button onclick="app.closeAuthModal()" class="absolute top-4 right-4 text-zenith-textSecondary hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-zenith-green/10 border border-zenith-green flex items-center justify-center text-zenith-green text-2xl mx-auto mb-2 glow-green-sm">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Hesap Girişi / Kayıt</h3>
+                <p class="text-xs text-zenith-textSecondary mt-1">Supabase kimlik doğrulama altyapısı ile oturum açın.</p>
+            </div>
+
+            <div class="space-y-3 pt-2">
+                <div>
+                    <label class="block text-xs text-zenith-textSecondary mb-1">E-Posta Adresi</label>
+                    <input type="email" id="auth-email" placeholder="ornek@domain.com" class="w-full bg-zenith-card border border-zenith-border rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zenith-green">
+                </div>
+                <div>
+                    <label class="block text-xs text-zenith-textSecondary mb-1">Şifre</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-zenith-card border border-zenith-border rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zenith-green">
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="app.submitAuth('login')" class="flex-1 bg-zenith-green text-black font-extrabold py-2.5 rounded-xl hover:bg-zenith-greenHover transition">
+                        Giriş Yap
+                    </button>
+                    <button onclick="app.submitAuth('signup')" class="flex-1 bg-zenith-card border border-zenith-border text-white font-bold py-2.5 rounded-xl hover:bg-zenith-border transition">
+                        Kayıt Ol
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-upgrade" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zenith-dark border border-zenith-border rounded-2xl max-w-lg w-full p-6 space-y-6 relative overflow-hidden">
+            <button onclick="app.closeUpgradeModal()" class="absolute top-4 right-4 text-zenith-textSecondary hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center space-y-2">
+                <span class="bg-zenith-green/10 border border-zenith-green/40 text-zenith-green text-xs font-bold px-3 py-1 rounded-full uppercase">Kullanım Limitleri</span>
+                <h3 class="text-2xl font-extrabold text-white">Paket Bilgilendirmesi</h3>
+                <p class="text-xs text-zenith-textSecondary">Günlük ücretsiz limitleriniz her 24 saatte bir sıfırlanır.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-zenith-card border border-zenith-border rounded-xl p-4 space-y-3">
+                    <p class="text-xs font-bold text-zenith-green uppercase">Ücretsiz Katman</p>
+                    <ul class="text-[11px] text-slate-300 space-y-1.5">
+                        <li><i class="fa-solid fa-check text-zenith-green mr-1"></i> Günde 15 Mesaj</li>
+                        <li><i class="fa-solid fa-check text-zenith-green mr-1"></i> Görsel & PDF Analizi</li>
+                        <li><i class="fa-solid fa-check text-zenith-green mr-1"></i> Google Search Araması</li>
+                    </ul>
+                </div>
+                <div class="bg-zenith-card border border-zenith-border rounded-xl p-4 space-y-3 opacity-75">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Kurumsal / Premium</p>
+                    <p class="text-[11px] text-zenith-textSecondary">Ödeme altyapısı (Stripe/Iyzico) entegre edilene kadar ekstra ücretli paket satışı kapalıdır.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zenith-dark border border-zenith-border rounded-2xl max-w-xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="app.closeSettingsModal()" class="absolute top-4 right-4 text-zenith-textSecondary hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-sliders text-zenith-green"></i>
+                <span>Supabase Bağlantısı & Ayarlar</span>
+            </h3>
+
+            <div class="space-y-3 bg-zenith-card p-4 rounded-xl border border-zenith-border">
+                <h4 class="text-xs font-bold text-zenith-green uppercase">Supabase Bilgileri (Opsiyonel)</h4>
+                <p class="text-[11px] text-zenith-textSecondary">Supabase eklemezseniz veriler taranan tarayıcı ortamında (LocalStorage) saklanır.</p>
+                <div>
+                    <label class="block text-[11px] text-zenith-textSecondary mb-1">Supabase URL</label>
+                    <input type="text" id="supabase-url-input" placeholder="https://xyz.supabase.co" class="w-full bg-zenith-dark border border-zenith-border rounded-lg px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-zenith-textSecondary mb-1">Supabase Anon Key</label>
+                    <input type="password" id="supabase-key-input" placeholder="eyJhbGci..." class="w-full bg-zenith-dark border border-zenith-border rounded-lg px-3 py-2 text-xs text-white">
+                </div>
+                <button onclick="app.saveSupabaseConfig()" class="bg-zenith-green text-black font-bold text-xs px-4 py-2 rounded-lg hover:bg-zenith-greenHover">Bağlantıyı Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 flex flex-col space-y-2 pointer-events-none max-w-xs w-full px-4"></div>
+
+    <script>
+        const TRANSLATIONS = {
+            tr: {
+                new_chat: "Yeni Sohbet",
+                recent_chats: "Geçmiş Sohbetler",
+                plan_status: "Plan:",
+                msg_quota: "Günlük Limit",
+                upgrade_btn: "Plan Detayları",
+                web_search: "Web Araması",
+                empty_subtitle: "Sorular sorun, kod yazdırın, görselleri ve PDF dosyalarını analiz edin ya da canlı web araştırması yapın."
+            },
+            en: {
+                new_chat: "New Chat",
+                recent_chats: "Recent Chats",
+                plan_status: "Plan:",
+                msg_quota: "Daily Limit",
+                upgrade_btn: "Plan Details",
+                web_search: "Web Search",
+                empty_subtitle: "Ask questions, generate code, analyze images or PDFs, or conduct live web research."
+            }
+        };
+
+        class ZenithAIApp {
+            constructor() {
+                this.lang = localStorage.getItem('zenith_lang') || 'tr';
+                this.user = JSON.parse(localStorage.getItem('zenith_user')) || null;
+                
+                this.activeChatId = null;
+                this.chats = JSON.parse(localStorage.getItem('zenith_chats')) || [];
+                this.activeMessages = [];
+                
+                this.usage = JSON.parse(localStorage.getItem('zenith_usage')) || {
+                    date: new Date().toISOString().split('T')[0],
+                    messages: 0
+                };
+                this.checkDailyUsageReset();
+
+                this.selectedModel = "gemini-2.5-flash";
+                this.webSearchEnabled = false;
+                this.attachedFile = null;
+
+                this.supabaseUrl = localStorage.getItem('zenith_sp_url') || "";
+                this.supabaseKey = localStorage.getItem('zenith_sp_key') || "";
+                this.supabaseClient = null;
+
+                if (this.supabaseUrl && this.supabaseKey && window.supabase) {
+                    try {
+                        this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+                    } catch(e) { console.error("Supabase init error:", e); }
+                }
+            }
+
+            init() {
+                this.applyLanguage();
+                this.updateUsageUI();
+                this.renderHistoryList();
+                this.updateUserUI();
+
+                if (this.chats.length > 0) {
+                    this.loadChat(this.chats[0].id);
+                } else {
+                    this.startNewChat();
+                }
+
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    },
+                    breaks: true
+                });
+            }
+
+            checkDailyUsageReset() {
+                const today = new Date().toISOString().split('T')[0];
+                if (this.usage.date !== today) {
+                    this.usage = { date: today, messages: 0 };
+                    this.saveUsage();
+                }
+            }
+
+            saveUsage() {
+                localStorage.setItem('zenith_usage', JSON.stringify(this.usage));
+                this.updateUsageUI();
+            }
+
+            updateUsageUI() {
+                const maxMsg = 15;
+                const msgCountEl = document.getElementById('sidebar-msg-count');
+                const msgBarEl = document.getElementById('sidebar-msg-bar');
+                const statusTextEl = document.getElementById('current-quota-status-text');
+
+                msgCountEl.innerText = `${this.usage.messages} / ${maxMsg}`;
+                const pct = Math.min(100, (this.usage.messages / maxMsg) * 100);
+                msgBarEl.style.width = `${pct}%`;
+                statusTextEl.innerText = `Kalan mesaj: ${Math.max(0, maxMsg - this.usage.messages)}/${maxMsg}`;
+            }
+
+            startNewChat() {
+                const newChat = {
+                    id: 'chat_' + Date.now(),
+                    title: 'Yeni Sohbet',
+                    messages: [],
+                    createdAt: new Date().toISOString()
+                };
+                this.chats.unshift(newChat);
+                this.saveChats();
+                this.loadChat(newChat.id);
+            }
+
+            loadChat(chatId) {
+                this.activeChatId = chatId;
+                const chat = this.chats.find(c => c.id === chatId);
+                if (!chat) return;
+
+                this.activeMessages = chat.messages || [];
+                document.getElementById('active-chat-title').innerText = chat.title;
+
+                this.renderMessages();
+                this.renderHistoryList();
+            }
+
+            saveChats() {
+                localStorage.setItem('zenith_chats', JSON.stringify(this.chats));
+            }
+
+            renderHistoryList() {
+                const container = document.getElementById('chat-history-container');
+                const headerText = TRANSLATIONS[this.lang].recent_chats;
+                
+                let html = `<div class="text-xs text-zenith-textSecondary px-2 py-1 font-semibold uppercase tracking-wider">${headerText}</div>`;
+
+                if (this.chats.length === 0) {
+                    html += `<div class="text-xs text-zenith-textSecondary px-2 py-2">Sohbet yok.</div>`;
+                } else {
+                    this.chats.forEach(chat => {
+                        const isActive = chat.id === this.activeChatId;
+                        html += `
+                        <div class="group flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs transition ${isActive ? 'bg-zenith-card text-zenith-green font-bold border border-zenith-green/30' : 'text-slate-300 hover:bg-zenith-card/50'}" onclick="app.loadChat('${chat.id}')">
+                            <div class="flex items-center space-x-2 truncate">
+                                <i class="fa-regular fa-message text-sm"></i>
+                                <span class="truncate">${chat.title}</span>
+                            </div>
+                            <div class="hidden group-hover:flex items-center space-x-1">
+                                <button onclick="event.stopPropagation(); app.deleteChat('${chat.id}')" class="p-1 hover:text-red-400" title="Sil"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        `;
+                    });
+                }
+                container.innerHTML = html;
+            }
+
+            deleteChat(chatId) {
+                this.chats = this.chats.filter(c => c.id !== chatId);
+                this.saveChats();
+                if (this.activeChatId === chatId) {
+                    if (this.chats.length > 0) this.loadChat(this.chats[0].id);
+                    else this.startNewChat();
+                } else {
+                    this.renderHistoryList();
+                }
+            }
+
+            renderMessages() {
+                const list = document.getElementById('messages-list');
+                const emptyState = document.getElementById('empty-state');
+
+                if (this.activeMessages.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    list.innerHTML = '';
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                let html = '';
+
+                this.activeMessages.forEach((msg) => {
+                    const isUser = msg.role === 'user';
+                    
+                    html += `
+                    <div class="flex space-x-3 ${isUser ? 'justify-end' : 'justify-start'}">
+                        ${!isUser ? `
+                        <div class="w-8 h-8 rounded-xl bg-zenith-green/10 border border-zenith-green flex items-center justify-center text-zenith-green flex-shrink-0 glow-green-sm">
+                            <i class="fa-solid fa-bolt text-xs"></i>
+                        </div>
+                        ` : ''}
+
+                        <div class="max-w-[85%] sm:max-w-[75%] space-y-1">
+                            <div class="${isUser ? 'bg-zenith-green text-black font-medium' : 'bg-zenith-card border border-zenith-border text-slate-100'} p-3.5 rounded-2xl text-sm leading-relaxed shadow-md">
+                                ${msg.file ? `
+                                <div class="mb-2 p-2 bg-black/20 rounded-lg text-xs flex items-center space-x-2 border border-white/10">
+                                    <i class="fa-solid fa-paperclip"></i>
+                                    <span class="font-bold truncate">${msg.file.name}</span>
+                                </div>
+                                ` : ''}
+
+                                <div class="markdown-body">
+                                    ${isUser ? msg.text : marked.parse(msg.text || '')}
+                                </div>
+
+                                ${msg.sources && msg.sources.length > 0 ? `
+                                <div class="mt-3 pt-2 border-t border-zenith-border text-xs space-y-1">
+                                    <p class="font-bold text-zenith-green text-[10px] uppercase">Arama Kaynakları:</p>
+                                    ${msg.sources.map(s => `<a href="${s.uri}" target="_blank" rel="noopener noreferrer" class="block truncate text-cyan-400 hover:underline text-[11px]"><i class="fa-solid fa-link text-[9px] mr-1"></i>${s.title || s.uri}</a>`).join('')}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        ${isUser ? `
+                        <div class="w-8 h-8 rounded-xl bg-zenith-border flex items-center justify-center text-white flex-shrink-0 font-bold text-xs">
+                            K
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                });
+
+                list.innerHTML = html;
+                const container = document.getElementById('messages-container');
+                container.scrollTop = container.scrollHeight;
+            }
+
+            usePrompt(text) {
+                document.getElementById('chat-input').value = text;
+                this.sendMessage();
+            }
+
+            handleKeyDown(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            }
+
+            async sendMessage() {
+                const inputEl = document.getElementById('chat-input');
+                const text = inputEl.value.trim();
+
+                if (!text && !this.attachedFile) return;
+
+                if (this.usage.messages >= 15) {
+                    this.showToast("Günlük mesaj limitinize ulaştınız (15/15).", "error");
+                    return;
+                }
+
+                const userMsg = {
+                    role: 'user',
+                    text: text,
+                    file: this.attachedFile ? { name: this.attachedFile.name } : null
+                };
+
+                this.activeMessages.push(userMsg);
+                inputEl.value = '';
+
+                const activeFile = this.attachedFile;
+                this.removeAttachment();
+                this.renderMessages();
+
+                this.usage.messages += 1;
+                this.saveUsage();
+
+                const chat = this.chats.find(c => c.id === this.activeChatId);
+                if (chat && chat.messages.length === 0) {
+                    chat.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+                    document.getElementById('active-chat-title').innerText = chat.title;
+                    this.saveChats();
+                    this.renderHistoryList();
+                }
+
+                const assistantMsgIdx = this.activeMessages.length;
+                this.activeMessages.push({ role: 'model', text: 'Yanıt oluşturuluyor...' });
+                this.renderMessages();
+
+                try {
+                    const result = await this.callBackendApi(text, activeFile);
+                    this.activeMessages[assistantMsgIdx] = {
+                        role: 'model',
+                        text: result.text,
+                        sources: result.sources || []
+                    };
+
+                    if (chat) {
+                        chat.messages = this.activeMessages;
+                        this.saveChats();
+                    }
+                } catch (err) {
+                    console.error("API Error:", err);
+                    this.activeMessages[assistantMsgIdx] = {
+                        role: 'model',
+                        text: `⚠️ **Hata:** ${err.message}`
+                    };
+                }
+
+                this.renderMessages();
+            }
+
+            async callBackendApi(promptText, fileObj) {
+                // file:// Protokol Engeli Kontrolü
+                if (window.location.protocol === 'file:') {
+                    throw new Error("Bu uygulama doğrudan yerel dosya sisteminden (file://) çalıştırılamaz. Lütfen projeyi Vercel üzerine yükleyin veya yerel bir HTTP sunucusu (örn. Vercel CLI / live-server) kullanın.");
+                }
+
+                const apiContents = [];
+                const historyMsgs = this.activeMessages.slice(0, -1);
+                
+                historyMsgs.forEach(msg => {
+                    if (msg.role === 'user') {
+                        apiContents.push({
+                            role: 'user',
+                            parts: [{ text: msg.text || '' }]
+                        });
+                    } else if (msg.role === 'model' && msg.text !== 'Yanıt oluşturuluyor...') {
+                        apiContents.push({
+                            role: 'model',
+                            parts: [{ text: msg.text || '' }]
+                        });
+                    }
+                });
+
+                const currentParts = [];
+
+                if (fileObj) {
+                    if (fileObj.dataBase64) {
+                        currentParts.push({
+                            inlineData: {
+                                mimeType: fileObj.type,
+                                data: fileObj.dataBase64
+                            }
+                        });
+                    } else if (fileObj.textContent) {
+                        currentParts.push({
+                            text: `[Ekli PDF Metni (${fileObj.name})]:\n${fileObj.textContent}\n---\n`
+                        });
+                    }
+                }
+
+                if (promptText) {
+                    currentParts.push({ text: promptText });
+                }
+
+                if (currentParts.length > 0) {
+                    apiContents.push({
+                        role: 'user',
+                        parts: currentParts
+                    });
+                }
+
+                const payload = {
+                    model: this.selectedModel,
+                    contents: apiContents,
+                    systemInstruction: {
+                        parts: [{ text: "Sen Zenith AI adında Türkçe odaklı, son derece akıllı, nazik ve yardımsever bir yapay zeka asistanısın." }]
+                    }
+                };
+
+                if (this.webSearchEnabled) {
+                    payload.tools = [{ google_search: {} }];
+                }
+
+                // Doğrudan Vercel Serverless Function adresine yönlendirme
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data?.error?.message || `Sunucu Hatası (${response.status})`);
+                }
+
+                const candidate = data.candidates?.[0];
+                if (!candidate) {
+                    throw new Error('Yanıt alınamadı. İçerik güvenlik filtrelerine takılmış olabilir.');
+                }
+
+                const textParts = candidate.content?.parts || [];
+                const generatedText = textParts.map(p => p.text).join('') || 'Boş yanıt döndü.';
+
+                let sources = [];
+                const groundingAttributions = candidate.groundingMetadata?.groundingAttributions;
+                if (groundingAttributions && Array.isArray(groundingAttributions)) {
+                    groundingAttributions.forEach(attr => {
+                        if (attr.web?.uri && attr.web?.title) {
+                            sources.push({
+                                uri: attr.web.uri,
+                                title: attr.web.title
+                            });
+                        }
+                    });
+                }
+
+                return { text: generatedText, sources };
+            }
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+                if (!allowed.includes(file.type)) {
+                    this.showToast("Lütfen yalnızca PDF, PNG, JPG veya WEBP seçin.", "error");
+                    return;
+                }
+
+                if (file.type === 'application/pdf') {
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        try {
+                            const typedarray = new Uint8Array(event.target.result);
+                            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                            let fullText = '';
+                            for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+                                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                            }
+                            this.attachedFile = { name: file.name, type: file.type, textContent: fullText };
+                            this.showFilePreview(file.name);
+                        } catch (err) {
+                            this.showToast("PDF okunamadı.", "error");
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const base64Data = event.target.result.split(',')[1];
+                        this.attachedFile = { name: file.name, type: file.type, dataBase64: base64Data };
+                        this.showFilePreview(file.name);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            showFilePreview(name) {
+                const pill = document.getElementById('file-preview-pill');
+                document.getElementById('file-preview-name').innerText = name;
+                pill.classList.remove('hidden');
+            }
+
+            removeAttachment() {
+                this.attachedFile = null;
+                document.getElementById('file-preview-pill').classList.add('hidden');
+                document.getElementById('file-input').value = '';
+            }
+
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            }
+
+            toggleWebSearch() {
+                this.webSearchEnabled = !this.webSearchEnabled;
+                const dot = document.getElementById('search-status-dot');
+                const btn = document.getElementById('btn-toggle-search');
+                
+                if (this.webSearchEnabled) {
+                    dot.className = "w-2 h-2 rounded-full bg-zenith-green glow-green-sm";
+                    btn.classList.add('border-zenith-green');
+                    this.showToast("Web Araması Açık (Google Search Grounding)");
+                } else {
+                    dot.className = "w-2 h-2 rounded-full bg-slate-500";
+                    btn.classList.remove('border-zenith-green');
+                    this.showToast("Web Araması Kapalı");
+                }
+            }
+
+            changeModel(val) {
+                this.selectedModel = val;
+                this.showToast(`Model: ${val}`);
+            }
+
+            toggleLanguage() {
+                this.lang = this.lang === 'tr' ? 'en' : 'tr';
+                localStorage.setItem('zenith_lang', this.lang);
+                document.getElementById('lang-code-indicator').innerText = this.lang.toUpperCase();
+                this.applyLanguage();
+            }
+
+            applyLanguage() {
+                const dict = TRANSLATIONS[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) el.innerText = dict[key];
+                });
+            }
+
+            showToast(msg, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-900/90 border-red-500' : 'bg-zenith-card border-zenith-green';
+                
+                toast.className = `${bgColor} border px-4 py-3 rounded-xl shadow-xl text-xs font-semibold text-white flex items-center space-x-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto`;
+                toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation text-red-400' : 'fa-circle-check text-zenith-green'} text-base"></i><span>${msg}</span>`;
+                
+                container.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); }
+            closeAuthModal() { document.getElementById('modal-auth').classList.add('hidden'); }
+            openUpgradeModal() { document.getElementById('modal-upgrade').classList.remove('hidden'); }
+            closeUpgradeModal() { document.getElementById('modal-upgrade').classList.add('hidden'); }
+            openSettingsModal() { 
+                document.getElementById('supabase-url-input').value = this.supabaseUrl;
+                document.getElementById('supabase-key-input').value = this.supabaseKey;
+                document.getElementById('modal-settings').classList.remove('hidden'); 
+            }
+            closeSettingsModal() { document.getElementById('modal-settings').classList.add('hidden'); }
+
+            async submitAuth(type) {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+
+                if (!email || !password) {
+                    this.showToast("Lütfen e-posta ve şifre girin.", "error");
+                    return;
+                }
+
+                if (this.supabaseClient) {
+                    try {
+                        let res;
+                        if (type === 'signup') {
+                            res = await this.supabaseClient.auth.signUp({ email, password });
+                        } else {
+                            res = await this.supabaseClient.auth.signInWithPassword({ email, password });
+                        }
+
+                        if (res.error) throw res.error;
+
+                        this.user = { email: res.data.user.email, id: res.data.user.id };
+                        localStorage.setItem('zenith_user', JSON.stringify(this.user));
+                        this.updateUserUI();
+                        this.closeAuthModal();
+                        this.showToast("Supabase oturumu açıldı!");
+                    } catch (err) {
+                        this.showToast(err.message, "error");
+                    }
+                } else {
+                    this.user = { email, name: email.split('@')[0] };
+                    localStorage.setItem('zenith_user', JSON.stringify(this.user));
+                    this.updateUserUI();
+                    this.closeAuthModal();
+                    this.showToast("Yerel oturum açıldı.");
+                }
+            }
+
+            updateUserUI() {
+                if (this.user) {
+                    document.getElementById('user-display-name').innerText = this.user.email.split('@')[0];
+                    document.getElementById('user-display-email').innerText = this.user.email;
+                    document.getElementById('user-avatar-initials').innerText = this.user.email[0].toUpperCase();
+                    document.getElementById('auth-header-btn').innerText = "Hesabım";
+                }
+            }
+
+            saveSupabaseConfig() {
+                this.supabaseUrl = document.getElementById('supabase-url-input').value.trim();
+                this.supabaseKey = document.getElementById('supabase-key-input').value.trim();
+                localStorage.setItem('zenith_sp_url', this.supabaseUrl);
+                localStorage.setItem('zenith_sp_key', this.supabaseKey);
+                
+                if (this.supabaseUrl && this.supabaseKey && window.supabase) {
+                    this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+                }
+                
+                this.closeSettingsModal();
+                this.showToast("Supabase yapılandırması kaydedildi.");
+            }
+        }
+
+        let app;
+        window.onload = function() {
+            app = new ZenithAIApp();
+            app.init();
+        };
+    </script>
+</body>
+</html>
